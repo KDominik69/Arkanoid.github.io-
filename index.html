@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkanoid Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            text-align: center;
+            background-color: #0f0f1a;
+            color: #00ffcc;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            background: linear-gradient(180deg, #1a1a2e, #16213e);
+            border: 4px solid #00ffcc;
+            display: block;
+            margin: auto;
+            box-shadow: 0px 0px 20px #00ffcc;
+        }
+        #restartButton {
+            display: none;
+            margin: 20px auto;
+            padding: 12px 24px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #00ffcc;
+            color: #0f0f1a;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px #00ffcc;
+            transition: 0.3s ease-in-out;
+        }
+        #restartButton:hover {
+            background: #00aa88;
+            box-shadow: 0px 0px 25px #00ffcc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <button id="restartButton" onclick="restartGame()">Újra</button>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let lives = 3;
+        let score = 0;
+        let ballLaunched = false;
+        let gameOver = false;
+
+        let paddle = { x: 350, y: 550, width: 100, height: 10, speed: 7 };
+        let ball = { x: paddle.x + paddle.width / 2, y: paddle.y - 10, dx: 3, dy: 0, radius: 7 };
+
+        let bricks = [];
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 10; col++) {
+                let powerUp = Math.random() < 0.1 ? "multi" : null;
+                bricks.push({ x: col * 80 + 10, y: row * 30 + 50, width: 70, height: 20, powerUp: powerUp, destroyed: false });
+            }
+        }
+
+        let powerUps = [];
+
+        function drawPaddle() {
+            ctx.fillStyle = "#00ffcc";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#00ffcc";
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBall() {
+            ctx.fillStyle = "#ff0000";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff0000";
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBricks() {
+            bricks.forEach(brick => {
+                if (!brick.destroyed) {
+                    ctx.fillStyle = "#ffcc00";
+                    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                }
+            });
+        }
+
+        function drawScore() {
+            ctx.fillStyle = "#00ffcc";
+            ctx.font = "20px Orbitron";
+            ctx.fillText("Score: " + score, 20, 40);
+        }
+
+        function drawLives() {
+            ctx.fillStyle = "#ff0000";
+            ctx.font = "20px Orbitron";
+            ctx.fillText("Lives: " + lives, 20, 70);
+        }
+
+        function checkWin() {
+            if (bricks.every(brick => brick.destroyed)) {
+                gameOver = true;
+                ctx.fillStyle = "#00ffcc";
+                ctx.font = "30px Orbitron";
+                ctx.fillText("Gratulálok! Nyertél!", canvas.width / 2 - 150, canvas.height / 2);
+                document.getElementById("restartButton").style.display = "block";
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPaddle();
+            drawBall();
+            drawBricks();
+            drawLives();
+            drawScore();
+
+            if (keys["ArrowLeft"] && paddle.x > 0) paddle.x -= paddle.speed;
+            if (keys["ArrowRight"] && paddle.x + paddle.width < canvas.width) paddle.x += paddle.speed;
+
+            if (!ballLaunched) {
+                ball.x = paddle.x + paddle.width / 2;
+                ball.y = paddle.y - 10;
+            } else {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+            }
+
+            if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) ball.dx *= -1;
+            if (ball.y < ball.radius) ball.dy *= -1;
+
+            if (ball.y + ball.radius >= paddle.y && ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
+                ball.dy *= -1;
+                ball.y = paddle.y - ball.radius - 1;
+            }
+
+            if (ball.y > canvas.height) {
+                lives--;
+                ballLaunched = false;
+                ball.dx = 3;
+                ball.dy = 0;
+                if (lives === 0) {
+                    gameOver = true;
+                    ctx.fillStyle = "#ff0000";
+                    ctx.font = "30px Orbitron";
+                    ctx.fillText("Game Over", canvas.width / 2 - 80, canvas.height / 2);
+                    document.getElementById("restartButton").style.display = "block";
+                }
+            }
+
+            bricks.forEach(brick => {
+                if (!brick.destroyed && ball.x > brick.x && ball.x < brick.x + brick.width && ball.y > brick.y && ball.y < brick.y + brick.height) {
+                    ball.dy *= -1;
+                    brick.destroyed = true;
+                    score += 10;
+                }
+            });
+
+            checkWin();
+            requestAnimationFrame(update);
+        }
+
+        let keys = {};
+        window.addEventListener("keydown", e => {
+            keys[e.key] = true;
+            if (e.key === " " && !ballLaunched) {
+                ballLaunched = true;
+                ball.dy = -3;
+            }
+        });
+
+        window.addEventListener("keyup", e => keys[e.key] = false);
+
+        function restartGame() {
+            document.location.reload();
+        }
+
+        update();
+    </script>
+</body>
+</html>
