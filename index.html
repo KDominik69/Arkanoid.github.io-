@@ -36,8 +36,7 @@
             font-family: 'Orbitron', sans-serif;
             color: #ff0000;
         }
-        #irny
-        {
+        #irny {
             position: absolute;
             top: 80px;
             left: 20px;
@@ -69,7 +68,6 @@
     </style>
 </head>
 <body>
-    
     <div id="score">Pont: 0</div>
     <div id="lives">Élet: 3</div>
     <div id="irny">Irányitás:<br>-Nyilak<br>-WASD<br>-Space</div>
@@ -91,12 +89,12 @@
         let bricks = [];
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col < 10; col++) {
-                let powerUp = Math.random() < 0.1 ? "multi" : null;
-                bricks.push({ x: col * 80 + 10, y: row * 30 + 50, width: 70, height: 20, powerUp: powerUp, destroyed: false });
+                bricks.push({ x: col * 80 + 10, y: row * 30 + 50, width: 70, height: 20, destroyed: false });
             }
         }
 
         function drawPaddle() {
+            if(gameOver) return;
             ctx.fillStyle = "#00ffcc";
             ctx.shadowBlur = 15;
             ctx.shadowColor = "#00ffcc";
@@ -105,17 +103,19 @@
         }
 
         function drawBall() {
+            if(gameOver) return;
             ctx.fillStyle = "#ff0000";
             ctx.shadowBlur = 15;
             ctx.shadowColor = "#ff0000";
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
- ctx.fill();
+            ctx.fill();
             ctx.closePath();
             ctx.shadowBlur = 0;
         }
 
         function drawBricks() {
+            if(gameOver) return;
             bricks.forEach(brick => {
                 if (!brick.destroyed) {
                     ctx.fillStyle = "#ffcc00";
@@ -135,85 +135,101 @@
         function checkWin() {
             if (bricks.every(brick => brick.destroyed)) {
                 gameOver = true;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = "#00ffcc";
                 ctx.font = "30px Orbitron";
-                ctx.fillText("Gratulálok! Nyertél!", canvas.width / 2 - 150, canvas.height / 2);
+                ctx.fillText("Gratulálok! Nyertél!", canvas.width/2 - 150, canvas.height/2);
                 document.getElementById("restartButton").style.display = "block";
             }
         }
+
         let keys = {};
-window.addEventListener("keydown", e => {
-    keys[e.key] = true;
-    if (e.key === " " && !ballLaunched) {
-        ballLaunched = true;
-        ball.dy = -3;
-    }
-});
-
-window.addEventListener("keyup", e => keys[e.key] = false);
-
-function update() {
-    if (gameOver) return;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPaddle();
-    drawBall();
-    drawBricks();
-    updateLivesDisplay();
-    updateScoreDisplay();
-
-    // WASD irányítás
-    if (keys["a"] && paddle.x > 0) paddle.x -= paddle.speed; // A
-    if (keys["d"] && paddle.x + paddle.width < canvas.width) paddle.x += paddle.speed; // D
-
-    // Nyilak irányítása (opcionális, ha szeretnéd megtartani)
-    if (keys["ArrowLeft"] && paddle.x > 0) paddle.x -= paddle.speed;
-    if (keys["ArrowRight"] && paddle.x + paddle.width < canvas.width) paddle.x += paddle.speed;
-
-    if (!ballLaunched) {
-        ball.x = paddle.x + paddle.width / 2;
-        ball.y = paddle.y - 10;
-    } else {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-    }
-
-    if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) ball.dx *= -1;
-    if (ball.y < ball.radius) ball.dy *= -1;
-
-    if (ball.y + ball.radius >= paddle.y && ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-        ball.dy *= -1;
-        ball.y = paddle.y - ball.radius - 1;
-    }
-
-    if (ball.y > canvas.height) {
-        lives--;
-        ballLaunched = false;
-        ball.dx = 3;
-        ball.dy = 0;
-        if (lives === 0) {
-            gameOver = true;
-            ctx.fillStyle = "#ff0000";
-            ctx.font = "30px Orbitron";
-            ctx.fillText("Game Over", canvas.width / 2 - 80, canvas.height / 2);
-            document.getElementById("restartButton").style.display = "block";
-        }
-    }
-
-    bricks.forEach(brick => {
-        if (!brick.destroyed && ball.x > brick.x && ball.x < brick.x + brick.width && ball.y > brick.y && ball.y < brick.y + brick.height) {
-            ball.dy *= -1;
-            brick.destroyed = true;
-            score += 10;
-        }
-    });
-
-    checkWin();
-    requestAnimationFrame(update);
-}
-        
+        window.addEventListener("keydown", e => {
+            keys[e.key] = true;
+            if (e.key === " " && !ballLaunched) {
+                ballLaunched = true;
+                ball.dy = -3;
+            }
+        });
 
         window.addEventListener("keyup", e => keys[e.key] = false);
+
+        function update() {
+            if (gameOver) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPaddle();
+            drawBall();
+            drawBricks();
+            updateLivesDisplay();
+            updateScoreDisplay();
+
+            if (keys["a"] && paddle.x > 0) paddle.x -= paddle.speed;
+            if (keys["d"] && paddle.x + paddle.width < canvas.width) paddle.x += paddle.speed;
+            if (keys["ArrowLeft"] && paddle.x > 0) paddle.x -= paddle.speed;
+            if (keys["ArrowRight"] && paddle.x + paddle.width < canvas.width) paddle.x += paddle.speed;
+
+            if (!ballLaunched) {
+                ball.x = paddle.x + paddle.width/2;
+                ball.y = paddle.y - 10;
+            } else {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+            }
+
+            if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) ball.dx *= -1;
+            if (ball.y < ball.radius) ball.dy *= -1;
+
+            if (ball.y + ball.radius >= paddle.y && 
+                ball.x > paddle.x && 
+                ball.x < paddle.x + paddle.width) {
+                ball.dy *= -1;
+                ball.y = paddle.y - ball.radius - 1;
+            }
+
+            if (ball.y > canvas.height) {
+                lives--;
+                ballLaunched = false;
+                ball.dx = 3;
+                ball.dy = 0;
+                if (lives === 0) {
+                    gameOver = true;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = "#ff0000";
+                    ctx.font = "30px Orbitron";
+                    ctx.fillText("Game Over", canvas.width/2 - 80, canvas.height/2);
+                    document.getElementById("restartButton").style.display = "block";
+                }
+            }
+
+            bricks.forEach(brick => {
+                if (!brick.destroyed) {
+                    let closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+                    let closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+                    let distance = Math.sqrt(
+                        Math.pow(ball.x - closestX, 2) + 
+                        Math.pow(ball.y - closestY, 2)
+                    );
+
+                    if (distance < ball.radius) {
+                        brick.destroyed = true;
+                        score += 10;
+                        
+                        let overlapX = ball.x - closestX;
+                        let overlapY = ball.y - closestY;
+                        
+                        if (Math.abs(overlapX) > Math.abs(overlapY)) {
+                            ball.dx *= -1;
+                        } else {
+                            ball.dy *= -1;
+                        }
+                        checkWin(); 
+                    }
+                }
+            });
+
+            requestAnimationFrame(update);
+        }
 
         function restartGame() {
             document.location.reload();
