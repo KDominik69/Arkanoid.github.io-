@@ -85,7 +85,8 @@ Arkanoid
         let gameOver = false;
 
         let paddle = { x: 350, y: 550, width: 100, height: 10, speed: 7 };
-        let ball = { x: paddle.x + paddle.width / 2, y: paddle.y - 10, dx: 3, dy: 0, radius: 7 };
+        let ball = { x: paddle.x + paddle.width / 2, y: paddle.y - 10, dx: 6, dy: -3, radius: 7 };
+
 
         let bricks = [];
         for (let row = 0; row < 5; row++) {
@@ -189,19 +190,20 @@ Arkanoid
             }
 
             if (ball.y > canvas.height) {
-                lives--;
-                ballLaunched = false;
-                ball.dx = 3;
-                ball.dy = 0;
-                if (lives === 0) {
-                    gameOver = true;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = "#ff0000";
-                    ctx.font = "30px Orbitron";
-                    ctx.fillText("Game Over", canvas.width/2 - 80, canvas.height/2);
-                    document.getElementById("restartButton").style.display = "block";
-                }
-            }
+    lives--;
+    ballLaunched = false;
+    ball.x = paddle.x + paddle.width / 2;  
+    ball.y = paddle.y - 10;               
+    if (lives === 0) {
+        gameOver = true;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ff0000";
+        ctx.font = "30px Orbitron";
+        ctx.fillText("Game Over", canvas.width/2 - 80, canvas.height/2);
+        document.getElementById("restartButton").style.display = "block";
+    }
+}
+
 
             bricks.forEach(brick => {
                 if (!brick.destroyed) {
